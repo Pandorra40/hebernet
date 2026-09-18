@@ -34,6 +34,7 @@ type Manager struct {
 	phpCmd  *exec.Cmd
 	fbCmd   *exec.Cmd
 	phpPort int
+	phpRoot string
 	fbPort  int
 	fbRoot  string
 }
@@ -125,14 +126,37 @@ func (m *Manager) EnsureFilebrowserBin() error {
 func (m *Manager) StartPHP(docRoot string) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.phpCmd != nil && m.phpCmd.Process != nil {
-		return m.phpPort, nil
+
+	if m.phpCmd != nil && m.phpCmd.Process != nil && m.phpRoot == docRoot && m.phpPort > 0 {
+		if c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", m.phpPort), 100*time.Millisecond); err == nil {
+			_ = c.Close()
+			return m.phpPort, nil
+		}
+		_ = m.phpCmd.Process.Kill()
+		_, _ = m.phpCmd.Process.Wait()
+		m.phpCmd = nil
 	}
+	if m.phpCmd != nil && m.phpCmd.Process != nil {
+		_ = m.phpCmd.Process.Kill()
+		_, _ = m.phpCmd.Process.Wait()
+		m.phpCmd = nil
+	}
+
 	port, err := freePort()
 	if err != nil {
 		return 0, err
 	}
-	cmd := exec.Command("php", "-S", fmt.Sprintf("%s:%d", m.listenHost(), port), "-t", docRoot)
+	sessDir := filepath.Join(m.DataDir, "php-sessions")
+	if err := os.MkdirAll(sessDir, 0o700); err != nil {
+		return 0, err
+	}
+	// session.save_path sous DataDir : writable (user hebernet + ProtectSystem=strict)
+	cmd := exec.Command("php",
+		"-d", "session.save_path="+sessDir,
+		"-d", "session.use_strict_mode=1",
+		"-S", fmt.Sprintf("%s:%d", m.listenHost(), port),
+		"-t", docRoot,
+	)
 	cmd.Dir = docRoot
 	cmd.Stdout = nil
 	cmd.Stderr = nil
@@ -141,6 +165,7 @@ func (m *Manager) StartPHP(docRoot string) (int, error) {
 	}
 	m.phpCmd = cmd
 	m.phpPort = port
+	m.phpRoot = docRoot
 	time.Sleep(200 * time.Millisecond)
 	return port, nil
 }

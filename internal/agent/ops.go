@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -290,8 +291,16 @@ echo "<h1>Laravel (Hébernet)</h1><p>Docroot = public/. Installez via <code>comp
 		_ = os.RemoveAll(publicHTML)
 		if err := run("composer", "create-project", "--prefer-dist", "laravel/laravel", publicHTML); err == nil {
 			if dbName != "" && dbUser != "" {
+				if dbPass == "" {
+					return fmt.Errorf("laravel: mot de passe BDD manquant")
+				}
 				if err := configureLaravelEnv(publicHTML, dbName, dbUser, dbPass); err != nil {
 					return fmt.Errorf("laravel .env mysql: %w", err)
+				}
+				// Vérifie que MariaDB accepte ce couple avant migrate
+				check := exec.Command("mysql", "-u", dbUser, "-p"+dbPass, "-h", "127.0.0.1", "-e", "SELECT 1", dbName)
+				if outCheck, err := check.CombinedOutput(); err != nil {
+					return fmt.Errorf("laravel mysql auth: %w (%s)", err, strings.TrimSpace(string(outCheck)))
 				}
 				cmd := exec.Command("bash", "-c", fmt.Sprintf(
 					`cd %q && php artisan key:generate --force && php artisan migrate --force`,
@@ -479,8 +488,13 @@ func (s *Server) createDatabase(p map[string]any, out map[string]any) error {
 		out["db_password"] = pass
 		return nil
 	}
-	sql := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; GRANT ALL ON `%s`.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
-		name, user, escapeSQL(pass), name, user)
+	sql := fmt.Sprintf(
+		"CREATE DATABASE IF NOT EXISTS `%s`; "+
+			"CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; "+
+			"ALTER USER '%s'@'localhost' IDENTIFIED BY '%s'; "+
+			"GRANT ALL ON `%s`.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
+		name, user, escapeSQL(pass), user, escapeSQL(pass), name, user,
+	)
 	if err := run("mysql", "-e", sql); err != nil {
 		return err
 	}
@@ -507,8 +521,38 @@ func (s *Server) resetDBPass(p map[string]any, out map[string]any) error {
 	if err := run("mysql", "-e", sql); err != nil {
 		return err
 	}
+	// Aligne Laravel .env / wp-config si on connaît le site (évite Adminer ≠ app)
+	appType := str(p, "app_type")
+	linuxUser := str(p, "linux_user")
+	home := str(p, "home_path")
+	if home == "" && linuxUser != "" {
+		home = s.siteRoot(linuxUser)
+	}
+	if home != "" {
+		appRoot := filepath.Join(home, "public_html")
+		switch appType {
+		case "laravel":
+			_ = patchLaravelEnvKey(appRoot, "DB_PASSWORD", quoteEnvValue(pass))
+		case "wordpress":
+			_ = patchWPConfigDBPass(appRoot, pass)
+		}
+	}
 	out["db_password"] = pass
 	return nil
+}
+
+func patchWPConfigDBPass(appRoot, pass string) error {
+	cfg := filepath.Join(appRoot, "wp-config.php")
+	b, err := os.ReadFile(cfg)
+	if err != nil {
+		return err
+	}
+	re := regexp.MustCompile(`define\(\s*['"]DB_PASSWORD['"]\s*,\s*['"][^'"]*['"]\s*\)`)
+	repl := fmt.Sprintf("define('DB_PASSWORD', '%s')", strings.ReplaceAll(pass, "'", "\\'"))
+	if !re.Match(b) {
+		return fmt.Errorf("DB_PASSWORD not found in wp-config.php")
+	}
+	return os.WriteFile(cfg, re.ReplaceAll(b, []byte(repl)), 0o640)
 }
 
 func (s *Server) quotaUsage(p map[string]any, out map[string]any) error {

@@ -408,7 +408,12 @@ func (s *Server) handleSiteDBReset(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "pas de base sur ce site")
 		return
 	}
-	res, err := s.Agent.Call(protocol.OpResetDBPass, map[string]any{"db_user": site.DBUser})
+	res, err := s.Agent.Call(protocol.OpResetDBPass, map[string]any{
+		"db_user":     site.DBUser,
+		"app_type":    site.AppType,
+		"linux_user":  site.LinuxUser,
+		"home_path":   site.HomePath,
+	})
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
