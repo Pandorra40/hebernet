@@ -1,0 +1,19 @@
+.tools/
+third_party/
+node_modules/
+dist/
+data/
+*.db
+*.db-journal
+.env
+.DS_Store
+ui/dist/
+bin/
+*.log
+.vite/
+coverage/
+
+# extras
+tmp/
+hebernet-fix/
+*.new

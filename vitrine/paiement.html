@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prendre l’offre — Hébernet</title>
+  <meta name="description" content="Indiquez votre domaine, payez 49 €, activez votre hébergement Hébernet.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html">
+        <img class="brand-icon" src="img/mark.svg" width="32" height="32" alt="">
+        <span class="brand-text">
+          <span class="brand-mark">Héber<span class="brand-accent">net</span></span>
+          <span class="brand-sub">Hébergement web</span>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Ouvrir le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <nav id="menu" class="nav">
+        <a href="index.html">Accueil</a>
+        <a href="offre.html">L’offre</a>
+        <a href="marche.html">Comment ça marche</a>
+        <a href="conditions.html">Conditions</a>
+        <a href="contact.html">Contact</a>
+        <a class="btn btn-primary" href="paiement.html">Prendre l’offre</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu" class="section">
+    <div class="wrap" style="max-width: 34rem;">
+      <div id="vue-form">
+        <h1 class="page-title">Prendre l’offre</h1>
+        <p class="lede">Indiquez le domaine du site et votre e-mail. Paiement Stripe (test : carte <code class="mono">4242…</code>).</p>
+
+        <form id="checkout-form" class="checkout-form">
+          <div class="field">
+            <label for="domain">Nom de domaine</label>
+            <input id="domain" name="domain" type="text" class="mono" required
+              placeholder="exemple.fr" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" required
+              placeholder="vous@email.fr" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="app_type">Type de site</label>
+            <select id="app_type" name="app_type">
+              <option value="wordpress">WordPress</option>
+              <option value="php">PHP</option>
+              <option value="static">Statique</option>
+              <option value="laravel">Laravel</option>
+              <option value="prestashop">PrestaShop</option>
+            </select>
+          </div>
+          <p class="muted tiny">En payant, vous acceptez les <a href="conditions.html">conditions</a>.</p>
+          <div id="form-error" class="error-box" hidden></div>
+          <button type="submit" class="btn btn-primary btn-lg" id="pay-btn">Payer — 49&nbsp;€</button>
+        </form>
+      </div>
+
+      <div id="vue-status" hidden>
+        <h1 class="page-title">Activation</h1>
+        <p class="lede" id="status-intro">On prépare votre espace. Ça prend en général moins d’une minute.</p>
+
+        <ol class="activate-steps" aria-label="Étapes d’activation">
+          <li id="step-pay" class="activate-step is-done">
+            <span class="activate-dot" aria-hidden="true"></span>
+            <span class="activate-step-label">Paiement</span>
+          </li>
+          <li id="step-prep" class="activate-step is-current">
+            <span class="activate-dot" aria-hidden="true"></span>
+            <span class="activate-step-label">Préparation</span>
+          </li>
+          <li id="step-ready" class="activate-step">
+            <span class="activate-dot" aria-hidden="true"></span>
+            <span class="activate-step-label">Prêt</span>
+          </li>
+        </ol>
+
+        <div class="status-card" id="status-card">
+          <div class="status-icon" id="status-icon" aria-hidden="true">
+            <span class="status-spinner"></span>
+          </div>
+          <p id="status-label" class="status-label" aria-live="polite">Vérification du paiement…</p>
+          <p id="status-detail" class="muted"></p>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12" id="progress">
+            <div class="progress-track">
+              <span class="progress-fill" id="status-bar" style="width: 12%"></span>
+            </div>
+            <span class="progress-pct" id="status-pct">12&nbsp;%</span>
+          </div>
+          <p id="status-hint" class="muted tiny status-hint">Ne fermez pas cette page.</p>
+          <div id="status-actions" class="status-actions" hidden>
+            <a id="panel-link" class="btn btn-primary" href="http://127.0.0.1:5173/">Ouvrir le panneau</a>
+            <a class="btn btn-ghost" href="index.html">Retour à l’accueil</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="vue-cancel" hidden>
+        <h1 class="page-title">Paiement annulé</h1>
+        <p class="muted">Aucun débit. Vous pouvez réessayer quand vous voulez.</p>
+        <p><a class="btn btn-primary" href="paiement.html">Reprendre</a></p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p>Hébernet — hébergement web.</p>
+      <div class="footer-links">
+        <a href="conditions.html">Conditions</a>
+        <a href="mentions.html">Mentions légales</a>
+        <a href="confidentialite.html">Confidentialité</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </div>
+  </footer>
+  <script src="js/nav.js"></script>
+  <!-- Sur la VM : l’API est proxifiée par le panneau (:80). Surcharge possible :
+       <script>window.HEBERNET_API = 'http://192.168.124.40';</script> -->
+  <script src="js/checkout.js"></script>
+</body>
+</html>

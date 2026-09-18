@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comment ça marche — Hébernet</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="description" content="Vous payez, l’espace est créé, un mail vous envoie les identifiants.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html">
+        <img class="brand-icon" src="img/mark.svg" width="32" height="32" alt="">
+        <span class="brand-text">
+          <span class="brand-mark">Héber<span class="brand-accent">net</span></span>
+          <span class="brand-sub">Hébergement web</span>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Ouvrir le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <nav id="menu" class="nav">
+        <a href="index.html">Accueil</a>
+        <a href="offre.html">L’offre</a>
+        <a href="marche.html" aria-current="page">Comment ça marche</a>
+        <a href="conditions.html">Conditions</a>
+        <a href="contact.html">Contact</a>
+        <a class="btn btn-primary" href="paiement.html">Prendre l’offre</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu" class="section">
+    <div class="wrap">
+      <h1 class="page-title">Comment ça marche</h1>
+      <p class="lede">Quatre étapes. Pas de rendez-vous, pas de devis.</p>
+
+      <div class="steps" style="max-width: 40rem;">
+        <article class="step">
+          <h3>Vous payez 49&nbsp;€</h3>
+          <p>Un paiement pour l’année, par carte. Vous indiquez votre e-mail : c’est là que partiront les identifiants.</p>
+        </article>
+        <article class="step">
+          <h3>L’espace est créé</h3>
+          <p>Le serveur fabrique tout seul le site, le compte, la base. Vous n’avez rien à remplir côté nom de domaine.</p>
+        </article>
+        <article class="step">
+          <h3>Vous recevez un mail</h3>
+          <p>Adresse du panneau, identifiant, mot de passe, accès à la base. Une adresse technique permet de commencer tout de suite.</p>
+        </article>
+        <article class="step">
+          <h3>Vous publiez</h3>
+          <p>Fichiers par SFTP, ou depuis le panneau. Quand vous avez un nom de domaine, deux enregistrements A chez votre registrar suffisent. On vous donne l’adresse à pointer.</p>
+        </article>
+      </div>
+
+      <p class="muted" style="margin-top: 2rem; max-width: 38rem;">Au bout d’un an, vous pouvez renouveler au même prix. Pas de prélèvement automatique pour l’instant : on vous prévient, vous payez à nouveau si vous restez.</p>
+      <p style="margin-top: 1.5rem;"><a class="btn btn-primary btn-lg" href="paiement.html">Prendre l’offre</a></p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p>Hébernet — hébergement web. Beta de la vitrine.</p>
+      <div class="footer-links">
+        <a href="conditions.html">Conditions</a>
+        <a href="mentions.html">Mentions légales</a>
+        <a href="confidentialite.html">Confidentialité</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </div>
+  </footer>
+  <script src="js/nav.js"></script>
+</body>
+</html>

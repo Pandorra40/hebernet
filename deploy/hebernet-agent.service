@@ -1,0 +1,23 @@
+[Unit]
+Description=Hébernet agent (privileged ops)
+After=network.target
+Documentation=https://github.com/hebernet/hebernet
+
+[Service]
+Type=simple
+User=root
+Group=root
+RuntimeDirectory=hebernet
+RuntimeDirectoryMode=0750
+ExecStart=/usr/local/sbin/hebernet-agent \
+  -socket /run/hebernet/agent.sock \
+  -data /var/lib/hebernet \
+  -dry-run=false
+Restart=on-failure
+RestartSec=3
+
+# Directory + socket must be group hebernet (API user). Agent also sets this on listen.
+ExecStartPost=+/bin/sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do [ -S /run/hebernet/agent.sock ] && break; sleep 0.2; done; chgrp hebernet /run/hebernet /run/hebernet/agent.sock 2>/dev/null; chmod 750 /run/hebernet; chmod 660 /run/hebernet/agent.sock'
+
+[Install]
+WantedBy=multi-user.target

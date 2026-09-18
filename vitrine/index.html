@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hébernet — Hébergement web, 49 € l’année</title>
+  <meta name="description" content="Hébernet : un site, 5 Go, un compte, une base. 49 € par an, le même prix l’année suivante. Pas de mail, pas de nom de domaine.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html">
+        <img class="brand-icon" src="img/mark.svg" width="32" height="32" alt="">
+        <span class="brand-text">
+          <span class="brand-mark">Héber<span class="brand-accent">net</span></span>
+          <span class="brand-sub">Hébergement web</span>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Ouvrir le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <nav id="menu" class="nav">
+        <a href="index.html" aria-current="page">Accueil</a>
+        <a href="offre.html">L’offre</a>
+        <a href="marche.html">Comment ça marche</a>
+        <a href="conditions.html">Conditions</a>
+        <a href="contact.html">Contact</a>
+        <a class="btn btn-primary" href="paiement.html">Prendre l’offre</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <section class="hero">
+      <div class="wrap hero-stage">
+        <div class="hero-copy">
+          <p class="hero-brand">Héber<span class="accent">net</span></p>
+          <h1>Un site. Un prix. Une année.</h1>
+          <p class="lede">Vous apportez le domaine. On s’occupe du reste — 49&nbsp;€, le même tarif au renouvellement.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="paiement.html">Prendre l’offre — 49&nbsp;€</a>
+            <a class="btn btn-ghost btn-lg" href="offre.html">Voir ce qui est inclus</a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="panel-mock">
+            <div class="panel-mock-bar">
+              <span class="panel-mock-dot"></span>
+              <span class="panel-mock-dot"></span>
+              <span class="panel-mock-dot"></span>
+              <span class="panel-mock-title">panneau.hebernet.local / sites</span>
+            </div>
+            <div class="panel-mock-body">
+              <div class="panel-mock-row">
+                <strong>demo-wp.client.test</strong>
+                <span>WordPress · 5&nbsp;Go</span>
+                <span class="badge-ok">actif</span>
+              </div>
+              <div class="panel-mock-row">
+                <strong>exemple.fr</strong>
+                <span>Statique · SFTP</span>
+                <span class="badge-ok">actif</span>
+              </div>
+              <div class="panel-mock-row">
+                <strong>asso.local</strong>
+                <span>PHP 8.5 · 1&nbsp;BDD</span>
+                <span class="badge-ok">actif</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap grid-2">
+        <div>
+          <h2>Comment ça se passe</h2>
+          <p class="muted">Vous payez. L’espace est créé. Un mail vous envoie les identifiants.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <h3>Payer</h3>
+            <p>49&nbsp;€ une fois pour l’année — pas d’abonnement mensuel caché.</p>
+          </article>
+          <article class="step">
+            <h3>Recevoir les clés</h3>
+            <p>Accès au panneau, SFTP, et à la base si besoin.</p>
+          </article>
+          <article class="step">
+            <h3>Mettre en ligne</h3>
+            <p>Vous pointez votre domaine chez votre registrar.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cta-band">
+      <div class="wrap">
+        <h2>Prêt pour un an</h2>
+        <p>Le détail de l’offre est <a href="offre.html">ici</a>, les règles dans les <a href="conditions.html">conditions</a>.</p>
+        <p><a class="btn btn-primary btn-lg" href="paiement.html">Prendre l’offre — 49&nbsp;€</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p>Hébernet — hébergement web. Même identité que le panneau.</p>
+      <div class="footer-links">
+        <a href="conditions.html">Conditions</a>
+        <a href="mentions.html">Mentions légales</a>
+        <a href="confidentialite.html">Confidentialité</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </div>
+  </footer>
+  <script src="js/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[Unit]
+Description=Hébernet API
+After=network.target hebernet-agent.service
+Requires=hebernet-agent.service
+Documentation=https://github.com/hebernet/hebernet
+
+[Service]
+Type=simple
+User=hebernet
+Group=hebernet
+WorkingDirectory=/var/lib/hebernet
+EnvironmentFile=-/etc/hebernet/api.env
+ExecStart=/usr/local/bin/hebernet-api \
+  -addr 127.0.0.1:8787 \
+  -db /var/lib/hebernet/hebernet.db \
+  -socket /run/hebernet/agent.sock \
+  -data /var/lib/hebernet
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/hebernet
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
