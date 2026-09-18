@@ -102,7 +102,8 @@ ssh user@IP_VM 'cd hebernet && sudo ./scripts/install.sh'
 | Vitrine | `http://IP:8088/` |
 | Config | `/etc/hebernet/api.env` |
 
-Comptes seed : `admin@hebernet.local` / `admin` · `client@hebernet.local` / `client`.
+Comptes seed : `admin@hebernet.local` / `admin` (packages Starter/Pro/Business).  
+Pas de faux site WordPress en install serveur — le seed démo (`-seed-demo`) est réservé à `./scripts/demo.sh`.
 
 Détail : [docs/install.md](docs/install.md) · Stripe : [docs/stripe.md](docs/stripe.md).
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,8 @@ func main() {
 	dbPath := flag.String("db", envOr("HEBERNET_DB", "data/hebernet.db"), "sqlite path")
 	socket := flag.String("socket", envOr("HEBERNET_AGENT_SOCKET", "data/agent.sock"), "agent unix socket")
 	dataDir := flag.String("data", envOr("HEBERNET_DATA", "data"), "data dir (demo homes)")
-	seed := flag.Bool("seed", true, "seed demo admin/client + packages + site")
+	seed := flag.Bool("seed", true, "seed admin account + packages (minimal, prod-safe)")
+	seedDemo := flag.Bool("seed-demo", envOr("HEBERNET_SEED_DEMO", "0") != "0", "also seed demo client + fake WordPress site (lab only)")
 	flag.Parse()
 
 	absDB, _ := filepath.Abs(*dbPath)
@@ -36,8 +38,13 @@ func main() {
 	defer st.Close()
 
 	if *seed {
-		if err := seedDemo(st, absData); err != nil {
+		if err := seedMinimal(st); err != nil {
 			log.Printf("seed: %v", err)
+		}
+	}
+	if *seedDemo {
+		if err := seedDemoData(st, absData); err != nil {
+			log.Printf("seed-demo: %v", err)
 		}
 	}
 
@@ -82,7 +89,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(*addr, srv.Handler()))
 }
 
-func seedDemo(st *store.Store, dataDir string) error {
+func seedMinimal(st *store.Store) error {
 	admin, err := st.GetUserByEmail("admin@hebernet.local")
 	if err != nil {
 		adminHash, err := api.HashPassword("admin")
@@ -96,21 +103,7 @@ func seedDemo(st *store.Store, dataDir string) error {
 		if err := st.CreateUser(*admin); err != nil {
 			return err
 		}
-	}
-
-	client, err := st.GetUserByEmail("client@hebernet.local")
-	if err != nil {
-		clientHash, err := api.HashPassword("client")
-		if err != nil {
-			return err
-		}
-		client = &store.User{
-			ID: uuid.NewString(), Email: "client@hebernet.local", PasswordHash: clientHash,
-			Role: "client", DisplayName: "Client démo", CreatedAt: store.Now(),
-		}
-		if err := st.CreateUser(*client); err != nil {
-			return err
-		}
+		log.Printf("seed admin : admin@hebernet.local / admin — changez ce mot de passe")
 	}
 
 	pkgs, err := st.ListPackages()
@@ -128,6 +121,31 @@ func seedDemo(st *store.Store, dataDir string) error {
 				return err
 			}
 		}
+		log.Printf("seed packages : Starter / Pro / Business")
+	}
+	return nil
+}
+
+// seedDemoData adds a lab client + phantom WordPress row (no real Linux user). Lab only.
+func seedDemoData(st *store.Store, dataDir string) error {
+	client, err := st.GetUserByEmail("client@hebernet.local")
+	if err != nil {
+		clientHash, err := api.HashPassword("client")
+		if err != nil {
+			return err
+		}
+		client = &store.User{
+			ID: uuid.NewString(), Email: "client@hebernet.local", PasswordHash: clientHash,
+			Role: "client", DisplayName: "Client démo", CreatedAt: store.Now(),
+		}
+		if err := st.CreateUser(*client); err != nil {
+			return err
+		}
+	}
+
+	pkgs, err := st.ListPackages()
+	if err != nil || len(pkgs) == 0 {
+		return fmt.Errorf("packages requis (lancez d’abord -seed)")
 	}
 
 	owned, err := st.ListSitesByOwner(client.ID)
@@ -158,10 +176,10 @@ func seedDemo(st *store.Store, dataDir string) error {
 		if err := st.CreateSite(site); err != nil {
 			return err
 		}
-		log.Printf("seed site WP démo : demo-wp.client.test (Adminer / cron / FM)")
+		log.Printf("seed-demo site : demo-wp.client.test (lab — pas un vrai user Linux)")
 	}
 
-	log.Printf("seed OK — admin@hebernet.local / admin · client@hebernet.local / client")
+	log.Printf("seed-demo OK — client@hebernet.local / client")
 	return nil
 }
 

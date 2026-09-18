@@ -290,16 +290,28 @@ echo "<h1>Laravel (Hébernet)</h1><p>Docroot = public/. Installez via <code>comp
 		_ = os.RemoveAll(publicHTML)
 		if err := run("composer", "create-project", "--prefer-dist", "laravel/laravel", publicHTML); err == nil {
 			if dbName != "" && dbUser != "" {
-				_ = configureLaravelEnv(publicHTML, dbName, dbUser, dbPass)
-				_ = run("bash", "-c", fmt.Sprintf(
-					"cd %q && php artisan key:generate --force 2>/dev/null; php artisan migrate --force 2>/dev/null; true",
+				if err := configureLaravelEnv(publicHTML, dbName, dbUser, dbPass); err != nil {
+					return fmt.Errorf("laravel .env mysql: %w", err)
+				}
+				cmd := exec.Command("bash", "-c", fmt.Sprintf(
+					`cd %q && php artisan key:generate --force && php artisan migrate --force`,
 					publicHTML,
 				))
+				migOut, err := cmd.CombinedOutput()
+				if err != nil {
+					return fmt.Errorf("laravel migrate: %w (%s)", err, strings.TrimSpace(string(migOut)))
+				}
+				out["migrated"] = true
+				out["db"] = "mysql"
+			} else {
+				// Pas de BDD : sessions fichier pour éviter l’erreur « no such table: sessions »
+				_ = patchLaravelEnvKey(publicHTML, "SESSION_DRIVER", "file")
+				_ = run("bash", "-c", fmt.Sprintf(`cd %q && php artisan key:generate --force 2>/dev/null; true`, publicHTML))
+				out["db"] = "none"
 			}
 			_ = run("chown", "-R", user+":"+user, home)
 			out["method"] = "composer"
 			out["docroot"] = filepath.Join(publicHTML, "public")
-			out["db"] = "mysql"
 			return nil
 		}
 	}
@@ -313,35 +325,50 @@ echo "<h1>Laravel (Hébernet)</h1><p>Docroot = public/. Installez via <code>comp
 }
 
 func configureLaravelEnv(appRoot, dbName, dbUser, dbPass string) error {
+	if err := patchLaravelEnvKey(appRoot, "DB_CONNECTION", "mysql"); err != nil {
+		return err
+	}
+	_ = patchLaravelEnvKey(appRoot, "DB_HOST", "127.0.0.1")
+	_ = patchLaravelEnvKey(appRoot, "DB_PORT", "3306")
+	_ = patchLaravelEnvKey(appRoot, "DB_DATABASE", dbName)
+	_ = patchLaravelEnvKey(appRoot, "DB_USERNAME", dbUser)
+	_ = patchLaravelEnvKey(appRoot, "DB_PASSWORD", quoteEnvValue(dbPass))
+	_ = patchLaravelEnvKey(appRoot, "SESSION_DRIVER", "database")
+	// Évite que Laravel garde un DB_URL sqlite
+	_ = patchLaravelEnvKey(appRoot, "DB_URL", "")
+	return nil
+}
+
+func quoteEnvValue(v string) string {
+	if v == "" {
+		return `""`
+	}
+	if strings.ContainsAny(v, " #\"'\\") {
+		return `"` + strings.ReplaceAll(v, `"`, `\"`) + `"`
+	}
+	return v
+}
+
+func patchLaravelEnvKey(appRoot, key, val string) error {
 	envPath := filepath.Join(appRoot, ".env")
 	b, err := os.ReadFile(envPath)
 	if err != nil {
 		return err
 	}
-	content := string(b)
-	repl := func(key, val string) {
-		lines := strings.Split(content, "\n")
-		found := false
-		prefix := key + "="
-		for i, line := range lines {
-			if strings.HasPrefix(line, prefix) || strings.HasPrefix(line, "#"+prefix) {
-				lines[i] = prefix + val
-				found = true
-			}
+	lines := strings.Split(string(b), "\n")
+	prefix := key + "="
+	found := false
+	for i, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, prefix) || strings.HasPrefix(trim, "#"+prefix) {
+			lines[i] = prefix + val
+			found = true
 		}
-		if !found {
-			lines = append(lines, prefix+val)
-		}
-		content = strings.Join(lines, "\n")
 	}
-	repl("DB_CONNECTION", "mysql")
-	repl("DB_HOST", "127.0.0.1")
-	repl("DB_PORT", "3306")
-	repl("DB_DATABASE", dbName)
-	repl("DB_USERNAME", dbUser)
-	repl("DB_PASSWORD", dbPass)
-	repl("SESSION_DRIVER", "database")
-	return os.WriteFile(envPath, []byte(content), 0o640)
+	if !found {
+		lines = append(lines, prefix+val)
+	}
+	return os.WriteFile(envPath, []byte(strings.Join(lines, "\n")), 0o640)
 }
 
 func (s *Server) provisionPrestaShop(p map[string]any, out map[string]any) error {

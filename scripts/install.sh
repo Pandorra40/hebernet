@@ -5,9 +5,8 @@
 #   sudo ./scripts/install.sh
 #
 # Une ligne depuis la machine de dév (Ubuntu Server neuf = rien d’installé) :
-#   scp -r hebernet user@vm:~/
+#   scp -r hebernet vitrine user@vm:~/
 #   ssh user@vm 'cd hebernet && sudo ./scripts/install.sh'
-# (la vitrine est dans hebernet/vitrine/)
 #
 # Le script pose : paquets, agent, API, panneau (:80), vitrine (:8088), systemd.
 # Plus tard (quand le dépôt est public) :
@@ -64,7 +63,8 @@ if [[ "$SKIP_DEPS" != "1" ]]; then
     quota \
     sqlite3
   # Laravel one-click (optionnel)
-  apt-get install -y -qq composer 2>/dev/null || log "composer non disponible via apt — Laravel = page stub"  # PHP-FPM 8.5 si disponible, sinon le plus récent du dépôt
+  apt-get install -y -qq composer 2>/dev/null || log "composer non disponible via apt — Laravel = page stub"
+  # PHP-FPM 8.5 si disponible, sinon le plus récent du dépôt
   if apt-cache show php8.5-fpm >/dev/null 2>&1; then
     apt-get install -y -qq php8.5-fpm php8.5-cli php8.5-mysql php8.5-xml php8.5-mbstring php8.5-curl php8.5-zip php8.5-sqlite3 php8.5-gd php8.5-intl
   elif apt-cache show php8.4-fpm >/dev/null 2>&1; then
@@ -208,6 +208,12 @@ systemctl daemon-reload
 systemctl enable --now hebernet-agent.service
 systemctl enable --now hebernet-api.service
 
+# --- quotas disque (best effort) --------------------------------------------
+if [[ "${HEBERNET_SKIP_QUOTAS:-0}" != "1" && -x "$ROOT/scripts/enable-quotas.sh" ]]; then
+  log "Activation usrquota (best effort)"
+  bash "$ROOT/scripts/enable-quotas.sh" || log "Quotas non activés — setquota restera non bloquant"
+fi
+
 # --- nginx ------------------------------------------------------------------
 if [[ "$SKIP_NGINX" != "1" ]]; then
   log "Nginx panneau (:80) + vitrine (:8088)"
@@ -245,6 +251,7 @@ Hébernet installé (Ubuntu Server neuf → stack complète).
 Prochaines étapes :
   1. Éditer $ETC_DIR/api.env (Stripe sk_test_ / whsec_, Resend)
   2. systemctl restart hebernet-api
-  3. Panneau : admin@hebernet.local / admin
+  3. Panneau : admin@hebernet.local / admin  (changez ce mot de passe)
+  4. Pas de site démo fantôme — créez un vrai site via Stripe ou Admin
 
 EOF

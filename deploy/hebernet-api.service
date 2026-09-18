@@ -14,7 +14,10 @@ ExecStart=/usr/local/bin/hebernet-api \
   -addr 127.0.0.1:8787 \
   -db /var/lib/hebernet/hebernet.db \
   -socket /run/hebernet/agent.sock \
-  -data /var/lib/hebernet
+  -data /var/lib/hebernet \
+  -seed=true
+# Pas de -seed-demo : pas de faux site WordPress en install serveur.
+# Lab local : HEBERNET_SEED_DEMO=1 ou flag -seed-demo
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true

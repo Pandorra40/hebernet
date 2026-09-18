@@ -21,7 +21,7 @@ echo "==> agent (dry-run)"
 AGENT_PID=$!
 
 echo "==> api"
-./bin/hebernet-api -addr 127.0.0.1:8787 -db data/hebernet.db -socket data/agent.sock &
+./bin/hebernet-api -addr 127.0.0.1:8787 -db data/hebernet.db -socket data/agent.sock -seed -seed-demo &
 API_PID=$!
 
 cleanup() {
