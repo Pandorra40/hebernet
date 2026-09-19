@@ -37,7 +37,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 $success = getenv('HEBERNET_VITRINE_SUCCESS') ?: 'http://127.0.0.1:8088/?checkout=ok';
 $cancel  = getenv('HEBERNET_VITRINE_CANCEL') ?: 'http://127.0.0.1:8088/?checkout=annule';
 $amount  = getenv('HEBERNET_CHECKOUT_CENTS') ?: '100';
-$appType = getenv('HEBERNET_APP_TYPE') ?: 'wordpress';
+$appType = getenv('HEBERNET_APP_TYPE') ?: 'static';
 
 $champs = [
     'mode'                                   => 'payment',

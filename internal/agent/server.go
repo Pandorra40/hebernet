@@ -85,6 +85,12 @@ func (s *Server) dispatch(req protocol.Request) protocol.Response {
 		err = s.provisionLaravel(req.Params, res.Result)
 	case protocol.OpProvisionPrestaShop:
 		err = s.provisionPrestaShop(req.Params, res.Result)
+	case protocol.OpProvisionBludit:
+		err = s.provisionBludit(req.Params, res.Result)
+	case protocol.OpProvisionHugo:
+		err = s.provisionHugo(req.Params, res.Result)
+	case protocol.OpProvisionCodeIgniter:
+		err = s.provisionCodeIgniter(req.Params, res.Result)
 	case protocol.OpIssueSSL:
 		err = s.issueSSL(req.Params, res.Result)
 	case protocol.OpSuspendSite:

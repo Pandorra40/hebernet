@@ -152,31 +152,31 @@ func seedDemoData(st *store.Store, dataDir string) error {
 	if err != nil {
 		return err
 	}
-	hasWP := false
+	hasDemo := false
 	for _, s := range owned {
-		if s.AppType == "wordpress" || s.AppType == "php" {
-			hasWP = true
+		if s.AppType == "bludit" || s.AppType == "php" || s.AppType == "static" {
+			hasDemo = true
 			break
 		}
 	}
-	if !hasWP {
-		linuxUser := "hb_demo_wp"
+	if !hasDemo {
+		linuxUser := "hb_demo_bludit"
 		home := filepath.Join(dataDir, "homes", linuxUser)
 		public := filepath.Join(home, "public_html")
 		_ = os.MkdirAll(public, 0o755)
-		_ = os.WriteFile(filepath.Join(public, "index.php"), []byte("<?php echo 'WP démo Hébernet';\n"), 0o644)
+		_ = os.WriteFile(filepath.Join(public, "index.php"), []byte("<?php echo 'Bludit démo Hébernet';\n"), 0o644)
 		now := store.Now()
 		site := store.Site{
-			ID: uuid.NewString(), Domain: "demo-wp.client.test", AppType: "wordpress",
+			ID: uuid.NewString(), Domain: "demo-bludit.client.test", AppType: "bludit",
 			OwnerID: client.ID, PackageID: pkgs[0].ID, LinuxUser: linuxUser, HomePath: home,
 			PHPVersion: "8.5", Status: "active", SSLEnabled: false,
-			DBName: "hb_demo_wp", DBUser: "hb_demo_wp", SFTPUser: linuxUser,
+			DBName: "", DBUser: "", SFTPUser: linuxUser,
 			QuotaMB: pkgs[0].DiskMB, QuotaUsedMB: 1, CreatedAt: now, UpdatedAt: now,
 		}
 		if err := st.CreateSite(site); err != nil {
 			return err
 		}
-		log.Printf("seed-demo site : demo-wp.client.test (lab — pas un vrai user Linux)")
+		log.Printf("seed-demo site : demo-bludit.client.test (lab — pas un vrai user Linux)")
 	}
 
 	log.Printf("seed-demo OK — client@hebernet.local / client")

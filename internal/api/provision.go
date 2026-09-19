@@ -32,9 +32,8 @@ func (s *Server) provisionSite(req provisionRequest) (*provisionResult, error) {
 	if !domainRe.MatchString(req.Domain) {
 		return nil, fmt.Errorf("domaine invalide")
 	}
-	if req.AppType != "wordpress" && req.AppType != "php" && req.AppType != "static" &&
-		req.AppType != "laravel" && req.AppType != "prestashop" {
-		return nil, fmt.Errorf("app_type: wordpress|php|static|laravel|prestashop")
+	if !store.ValidAppType(req.AppType) {
+		return nil, fmt.Errorf("app_type: static|php|bludit|hugo|codeigniter")
 	}
 
 	if existing, err := s.Store.GetSiteByDomain(req.Domain); err == nil {
@@ -70,7 +69,7 @@ func (s *Server) provisionSite(req provisionRequest) (*provisionResult, error) {
 		}
 	}
 
-	needsDB := req.AppType == "wordpress" || req.AppType == "php" || req.AppType == "laravel" || req.AppType == "prestashop"
+	needsDB := req.AppType == "php" || req.AppType == "codeigniter"
 	if needsDB && !req.SkipLimits {
 		dbCount, err := s.Store.CountOwnerDatabases(owner.ID)
 		if err != nil {
@@ -113,7 +112,8 @@ func (s *Server) provisionSite(req provisionRequest) (*provisionResult, error) {
 		log.Printf("provision %s: set_quota ignoré: %v", req.Domain, err)
 	}
 
-	if req.AppType != "static" {
+	needsPHP := req.AppType == "php" || req.AppType == "bludit" || req.AppType == "codeigniter"
+	if needsPHP {
 		if _, err := s.Agent.Call(protocol.OpProvisionPHP, map[string]any{"linux_user": linuxUser, "php_version": "8.5"}); err != nil {
 			site.Status = "error"
 			_ = s.Store.UpdateSite(site)
@@ -146,25 +146,25 @@ func (s *Server) provisionSite(req provisionRequest) (*provisionResult, error) {
 		dbPass, _ = dbRes["db_password"].(string)
 	}
 	switch req.AppType {
-	case "wordpress":
-		if _, err := s.Agent.Call(protocol.OpProvisionWP, map[string]any{"linux_user": linuxUser}); err != nil {
+	case "bludit":
+		if _, err := s.Agent.Call(protocol.OpProvisionBludit, map[string]any{"linux_user": linuxUser}); err != nil {
 			site.Status = "error"
 			_ = s.Store.UpdateSite(site)
 			return nil, err
 		}
-	case "laravel":
-		if _, err := s.Agent.Call(protocol.OpProvisionLaravel, map[string]any{
-			"linux_user": linuxUser,
-			"db_name":    site.DBName,
-			"db_user":    site.DBUser,
+	case "hugo":
+		if _, err := s.Agent.Call(protocol.OpProvisionHugo, map[string]any{"linux_user": linuxUser}); err != nil {
+			site.Status = "error"
+			_ = s.Store.UpdateSite(site)
+			return nil, err
+		}
+	case "codeigniter":
+		if _, err := s.Agent.Call(protocol.OpProvisionCodeIgniter, map[string]any{
+			"linux_user":  linuxUser,
+			"db_name":     site.DBName,
+			"db_user":     site.DBUser,
 			"db_password": dbPass,
 		}); err != nil {
-			site.Status = "error"
-			_ = s.Store.UpdateSite(site)
-			return nil, err
-		}
-	case "prestashop":
-		if _, err := s.Agent.Call(protocol.OpProvisionPrestaShop, map[string]any{"linux_user": linuxUser}); err != nil {
 			site.Status = "error"
 			_ = s.Store.UpdateSite(site)
 			return nil, err

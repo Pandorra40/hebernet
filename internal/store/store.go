@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS packages (
 CREATE TABLE IF NOT EXISTS sites (
   id TEXT PRIMARY KEY,
   domain TEXT NOT NULL UNIQUE,
-  app_type TEXT NOT NULL CHECK(app_type IN ('wordpress','php','static','laravel','prestashop')),
+  app_type TEXT NOT NULL CHECK(app_type IN ('static','php','bludit','hugo','codeigniter','wordpress','laravel','prestashop')),
   owner_id TEXT NOT NULL REFERENCES users(id),
   package_id TEXT NOT NULL REFERENCES packages(id),
   linux_user TEXT NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS stripe_pending (
   session_id TEXT PRIMARY KEY,
   domain TEXT NOT NULL,
   email TEXT NOT NULL,
-  app_type TEXT NOT NULL DEFAULT 'wordpress',
+  app_type TEXT NOT NULL DEFAULT 'static',
   created_at TEXT NOT NULL
 );
 `
@@ -130,13 +130,13 @@ func (s *Store) ensurePackageColumns() error {
 	return nil
 }
 
-// expandAppTypes rebuilds sites table when an older CHECK constraint rejects laravel/prestashop.
+// expandAppTypes rebuilds sites table when CHECK rejects les nouveaux app_type.
 func (s *Store) expandAppTypes() error {
 	_, err := s.DB.Exec(`INSERT INTO sites (
 		id, domain, app_type, owner_id, package_id, linux_user, home_path, php_version, status,
 		ssl_enabled, db_name, db_user, sftp_user, quota_mb, quota_used_mb, created_at, updated_at
 	) SELECT
-		'__hebernet_apptype_probe__', '__hebernet_probe__.invalid', 'laravel',
+		'__hebernet_apptype_probe__', '__hebernet_probe__.invalid', 'bludit',
 		(SELECT id FROM users LIMIT 1), (SELECT id FROM packages LIMIT 1),
 		'_probe', '/tmp', '8.5', 'active', 0, '', '', '', 0, 0, ?, ?
 	WHERE EXISTS (SELECT 1 FROM users) AND EXISTS (SELECT 1 FROM packages)`, Now(), Now())
@@ -150,11 +150,12 @@ func (s *Store) expandAppTypes() error {
 		return err
 	}
 	defer tx.Rollback()
+	check := AllAppTypesSQL()
 	stmts := []string{
 		`CREATE TABLE sites_new (
   id TEXT PRIMARY KEY,
   domain TEXT NOT NULL UNIQUE,
-  app_type TEXT NOT NULL CHECK(app_type IN ('wordpress','php','static','laravel','prestashop')),
+  app_type TEXT NOT NULL CHECK(app_type IN (` + check + `)),
   owner_id TEXT NOT NULL REFERENCES users(id),
   package_id TEXT NOT NULL REFERENCES packages(id),
   linux_user TEXT NOT NULL,

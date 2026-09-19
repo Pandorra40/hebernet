@@ -247,11 +247,11 @@ func (s stripeCheckoutSession) appType() string {
 	if s.Metadata != nil {
 		t := strings.ToLower(strings.TrimSpace(s.Metadata["app_type"]))
 		switch t {
-		case "wordpress", "php", "static", "laravel", "prestashop":
+		case "static", "php", "bludit", "hugo", "codeigniter":
 			return t
 		}
 	}
-	return "wordpress"
+	return "static"
 }
 
 func verifyStripeSignature(payload []byte, header, secret string, tolerance time.Duration) error {

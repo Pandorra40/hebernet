@@ -10,7 +10,7 @@ const users = ref([])
 const error = ref('')
 const notice = ref('')
 const showForm = ref(false)
-const form = ref({ domain: '', app_type: 'wordpress', owner_id: '', package_id: '' })
+const form = ref({ domain: '', app_type: 'static', owner_id: '', package_id: '' })
 const createdCred = ref(null)
 const loading = ref(false)
 const busyId = ref('')
@@ -126,11 +126,11 @@ onMounted(load)
         <div class="field">
           <label>Type</label>
           <select v-model="form.app_type">
-            <option value="wordpress">WordPress</option>
-            <option value="laravel">Laravel</option>
-            <option value="prestashop">PrestaShop</option>
-            <option value="php">PHP</option>
             <option value="static">Statique</option>
+            <option value="hugo">Hugo</option>
+            <option value="php">PHP</option>
+            <option value="bludit">Bludit</option>
+            <option value="codeigniter">CodeIgniter</option>
           </select>
         </div>
         <div class="field">

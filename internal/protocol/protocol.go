@@ -22,9 +22,12 @@ const (
 	OpSetQuota       = "set_quota"
 	OpProvisionNginx = "provision_nginx"
 	OpProvisionPHP   = "provision_php"
-	OpProvisionWP         = "provision_wordpress"
-	OpProvisionLaravel    = "provision_laravel"
-	OpProvisionPrestaShop = "provision_prestashop"
+	OpProvisionWP         = "provision_wordpress" // legacy
+	OpProvisionLaravel    = "provision_laravel"   // legacy
+	OpProvisionPrestaShop = "provision_prestashop" // legacy
+	OpProvisionBludit     = "provision_bludit"
+	OpProvisionHugo       = "provision_hugo"
+	OpProvisionCodeIgniter = "provision_codeigniter"
 	OpIssueSSL            = "issue_ssl"
 	OpSuspendSite    = "suspend_site"
 	OpResumeSite     = "resume_site"

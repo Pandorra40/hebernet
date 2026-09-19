@@ -174,10 +174,10 @@ func (s *Server) provisionNginx(p map[string]any, out map[string]any) error {
 	appType := str(p, "app_type")
 	home := s.siteRoot(user)
 	root := filepath.Join(home, "public_html")
-	if appType == "laravel" {
+	if appType == "laravel" || appType == "codeigniter" {
 		root = filepath.Join(home, "public_html", "public")
 	}
-	php := appType != "static"
+	php := appType != "static" && appType != "hugo"
 	conf := renderNginx(domain, root, user, php)
 	var dest string
 	if s.DryRun {
@@ -426,6 +426,190 @@ echo "<h1>PrestaShop (démo Hébernet)</h1><p>Archive officielle + install wizar
 	return nil
 }
 
+func (s *Server) provisionBludit(p map[string]any, out map[string]any) error {
+	user := str(p, "linux_user")
+	home := s.siteRoot(user)
+	public := filepath.Join(home, "public_html")
+	_ = os.MkdirAll(public, 0o755)
+	if s.DryRun {
+		_ = os.WriteFile(filepath.Join(public, "index.php"), []byte("<?php echo '<h1>Bludit (démo)</h1>';\n"), 0o644)
+		out["method"] = "stub"
+		return nil
+	}
+	const ver = "3.22.0"
+	url := "https://github.com/bludit/bludit/archive/refs/tags/" + ver + ".zip"
+	archive := filepath.Join(os.TempDir(), "bludit-"+ver+".zip")
+	extract := filepath.Join(os.TempDir(), "bludit-extract-"+ver)
+	_ = os.RemoveAll(extract)
+	if err := run("curl", "-fsSL", "-L", url, "-o", archive); err != nil {
+		return fmt.Errorf("bludit download: %w", err)
+	}
+	if err := run("unzip", "-q", "-o", archive, "-d", extract); err != nil {
+		return fmt.Errorf("bludit unzip: %w", err)
+	}
+	src := filepath.Join(extract, "bludit-"+ver)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("bludit extract missing: %w", err)
+	}
+	_ = run("bash", "-c", fmt.Sprintf("rm -rf %q/* && cp -a %q/. %q/", public, src, public))
+	_ = run("chown", "-R", user+":"+user, home)
+	out["method"] = "github"
+	out["version"] = ver
+	return nil
+}
+
+func (s *Server) provisionHugo(p map[string]any, out map[string]any) error {
+	user := str(p, "linux_user")
+	home := s.siteRoot(user)
+	public := filepath.Join(home, "public_html")
+	src := filepath.Join(home, "hugo-site")
+	_ = os.MkdirAll(public, 0o755)
+	if s.DryRun {
+		_ = os.WriteFile(filepath.Join(public, "index.html"), []byte("<h1>Hugo (démo Hébernet)</h1>\n"), 0o644)
+		out["method"] = "stub"
+		return nil
+	}
+	hugoBin, err := s.ensureHugoBinary()
+	if err != nil {
+		return err
+	}
+	_ = os.RemoveAll(src)
+	if err := run(hugoBin, "new", "site", src); err != nil {
+		return fmt.Errorf("hugo new site: %w", err)
+	}
+	_ = os.MkdirAll(filepath.Join(src, "content"), 0o755)
+	_ = os.MkdirAll(filepath.Join(src, "layouts"), 0o755)
+	_ = os.WriteFile(filepath.Join(src, "content", "_index.md"), []byte("---\ntitle: \"Site Hébernet\"\n---\n\nBienvenue. Éditez `hugo-site/` puis relancez `hugo`.\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(src, "layouts", "index.html"), []byte("<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><title>{{ .Title }}</title></head>\n<body><h1>{{ .Title }}</h1>{{ .Content }}</body></html>\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(src, "hugo.toml"), []byte("baseURL = '/'\nlanguageCode = 'fr-fr'\ntitle = 'Site Hébernet'\n"), 0o644)
+	if err := run(hugoBin, "--source", src, "--destination", public, "--cleanDestinationDir"); err != nil {
+		return fmt.Errorf("hugo build: %w", err)
+	}
+	_ = run("chown", "-R", user+":"+user, home)
+	out["method"] = "hugo"
+	out["source_dir"] = src
+	out["docroot"] = public
+	return nil
+}
+
+func (s *Server) ensureHugoBinary() (string, error) {
+	if p, err := exec.LookPath("hugo"); err == nil {
+		return p, nil
+	}
+	dir := filepath.Join(s.DataDir, "bin")
+	_ = os.MkdirAll(dir, 0o755)
+	dest := filepath.Join(dir, "hugo")
+	if _, err := os.Stat(dest); err == nil {
+		return dest, nil
+	}
+	const ver = "0.139.4"
+	url := fmt.Sprintf("https://github.com/gohugoio/hugo/releases/download/v%s/hugo_%s_linux-amd64.tar.gz", ver, ver)
+	archive := filepath.Join(os.TempDir(), "hugo-"+ver+".tgz")
+	if err := run("curl", "-fsSL", "-L", url, "-o", archive); err != nil {
+		return "", fmt.Errorf("hugo download: %w", err)
+	}
+	extract := filepath.Join(os.TempDir(), "hugo-extract-"+ver)
+	_ = os.RemoveAll(extract)
+	_ = os.MkdirAll(extract, 0o755)
+	if err := run("tar", "-xzf", archive, "-C", extract); err != nil {
+		return "", fmt.Errorf("hugo extract: %w", err)
+	}
+	if err := run("install", "-m", "755", filepath.Join(extract, "hugo"), dest); err != nil {
+		return "", err
+	}
+	return dest, nil
+}
+
+func (s *Server) provisionCodeIgniter(p map[string]any, out map[string]any) error {
+	user := str(p, "linux_user")
+	dbName := str(p, "db_name")
+	dbUser := str(p, "db_user")
+	dbPass := str(p, "db_password")
+	home := s.siteRoot(user)
+	publicHTML := filepath.Join(home, "public_html")
+	pub := filepath.Join(publicHTML, "public")
+	_ = os.MkdirAll(pub, 0o755)
+	if s.DryRun {
+		_ = os.WriteFile(filepath.Join(pub, "index.php"), []byte("<?php echo '<h1>CodeIgniter (démo)</h1>';\n"), 0o644)
+		out["method"] = "stub"
+		out["docroot"] = pub
+		return nil
+	}
+	if _, err := exec.LookPath("composer"); err != nil {
+		return fmt.Errorf("codeigniter: composer requis")
+	}
+	_ = os.RemoveAll(publicHTML)
+	if err := run("composer", "create-project", "--prefer-dist", "codeigniter4/appstarter", publicHTML); err != nil {
+		return fmt.Errorf("codeigniter composer: %w", err)
+	}
+	if dbName != "" && dbUser != "" {
+		if dbPass == "" {
+			return fmt.Errorf("codeigniter: mot de passe BDD manquant")
+		}
+		_ = patchCIEnv(publicHTML, dbName, dbUser, dbPass)
+	}
+	_ = run("chown", "-R", user+":"+user, home)
+	out["method"] = "composer"
+	out["docroot"] = pub
+	return nil
+}
+
+func patchCIEnv(appRoot, dbName, dbUser, dbPass string) error {
+	envPath := filepath.Join(appRoot, "env")
+	dst := filepath.Join(appRoot, ".env")
+	if _, err := os.Stat(dst); err != nil {
+		_ = run("cp", envPath, dst)
+	}
+	b, err := os.ReadFile(dst)
+	if err != nil {
+		return err
+	}
+	text := string(b)
+	repls := map[string]string{
+		"CI_ENVIRONMENT = production": "CI_ENVIRONMENT = production",
+		"# database.default.hostname":  "database.default.hostname",
+		"# database.default.database":  "database.default.database",
+		"# database.default.username":  "database.default.username",
+		"# database.default.password":  "database.default.password",
+		"# database.default.DBDriver":  "database.default.DBDriver",
+	}
+	for old, neu := range repls {
+		text = strings.ReplaceAll(text, old, neu)
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		trim := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(trim, "database.default.hostname"):
+			lines[i] = "database.default.hostname = 127.0.0.1"
+		case strings.HasPrefix(trim, "database.default.database"):
+			lines[i] = "database.default.database = " + dbName
+		case strings.HasPrefix(trim, "database.default.username"):
+			lines[i] = "database.default.username = " + dbUser
+		case strings.HasPrefix(trim, "database.default.password"):
+			lines[i] = "database.default.password = " + dbPass
+		case strings.HasPrefix(trim, "database.default.DBDriver"):
+			lines[i] = "database.default.DBDriver = MySQLi"
+		}
+	}
+	return os.WriteFile(dst, []byte(strings.Join(lines, "\n")), 0o640)
+}
+
+func patchCIEnvPassword(appRoot, pass string) error {
+	envPath := filepath.Join(appRoot, ".env")
+	b, err := os.ReadFile(envPath)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(b), "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "database.default.password") {
+			lines[i] = "database.default.password = " + pass
+		}
+	}
+	return os.WriteFile(envPath, []byte(strings.Join(lines, "\n")), 0o640)
+}
+
 func (s *Server) issueSSL(p map[string]any, out map[string]any) error {
 	domain := str(p, "domain")
 	if s.DryRun {
@@ -533,6 +717,8 @@ func (s *Server) resetDBPass(p map[string]any, out map[string]any) error {
 		switch appType {
 		case "laravel":
 			_ = patchLaravelEnvKey(appRoot, "DB_PASSWORD", quoteEnvValue(pass))
+		case "codeigniter":
+			_ = patchCIEnvPassword(appRoot, pass)
 		case "wordpress":
 			_ = patchWPConfigDBPass(appRoot, pass)
 		}

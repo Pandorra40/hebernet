@@ -58,11 +58,11 @@
           <div class="field">
             <label for="app_type">Type de site</label>
             <select id="app_type" name="app_type">
-              <option value="wordpress">WordPress</option>
+              <option value="static">Statique (upload)</option>
+              <option value="hugo">Hugo (site généré)</option>
               <option value="php">PHP</option>
-              <option value="static">Statique</option>
-              <option value="laravel">Laravel</option>
-              <option value="prestashop">PrestaShop</option>
+              <option value="bludit">Bludit (CMS)</option>
+              <option value="codeigniter">CodeIgniter</option>
             </select>
           </div>
           <p class="muted tiny">En payant, vous acceptez les <a href="conditions.html">conditions</a>.</p>
@@ -130,8 +130,8 @@
     </div>
   </footer>
   <script src="js/nav.js"></script>
-  <!-- Surcharge optionnelle de l’URL API, ex. :
-       <script>window.HEBERNET_API = 'http://IP_DU_SERVEUR';</script> -->
+  <!-- Sur la VM : l’API est proxifiée par le panneau (:80). Surcharge possible :
+       <script>window.HEBERNET_API = 'http://192.168.124.40';</script> -->
   <script src="js/checkout.js"></script>
 </body>
 </html>

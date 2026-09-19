@@ -29,7 +29,7 @@ func (s *Server) handleStripeCheckout(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	appType := strings.ToLower(strings.TrimSpace(body.AppType))
 	if appType == "" {
-		appType = "wordpress"
+		appType = "static"
 	}
 	if !domainRe.MatchString(domain) {
 		writeErr(w, http.StatusBadRequest, "domaine invalide")
@@ -40,7 +40,7 @@ func (s *Server) handleStripeCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch appType {
-	case "wordpress", "php", "static", "laravel", "prestashop":
+	case "static", "php", "bludit", "hugo", "codeigniter":
 	default:
 		writeErr(w, http.StatusBadRequest, "app_type invalide")
 		return
