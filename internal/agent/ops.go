@@ -3,6 +3,7 @@ package agent
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -218,7 +219,10 @@ listen = /run/php/php%s-fpm-%s.sock
 listen.owner = www-data
 listen.group = www-data
 pm = ondemand
-pm.max_children = 10
+pm.max_children = 5
+pm.process_idle_timeout = 10s
+pm.max_requests = 500
+php_admin_value[memory_limit] = 128M
 php_admin_value[open_basedir] = %s:/tmp
 `, user, user, user, version, user, s.siteRoot(user))
 	var dest string
@@ -436,7 +440,7 @@ func (s *Server) provisionBludit(p map[string]any, out map[string]any) error {
 		out["method"] = "stub"
 		return nil
 	}
-	const ver = "3.22.0"
+	ver := latestGitHubTag("bludit/bludit", "3.22.0")
 	url := "https://github.com/bludit/bludit/archive/refs/tags/" + ver + ".zip"
 	archive := filepath.Join(os.TempDir(), "bludit-"+ver+".zip")
 	extract := filepath.Join(os.TempDir(), "bludit-extract-"+ver)
@@ -469,7 +473,7 @@ func (s *Server) provisionHugo(p map[string]any, out map[string]any) error {
 		out["method"] = "stub"
 		return nil
 	}
-	hugoBin, err := s.ensureHugoBinary()
+	hugoBin, ver, err := s.ensureHugoBinary()
 	if err != nil {
 		return err
 	}
@@ -487,37 +491,40 @@ func (s *Server) provisionHugo(p map[string]any, out map[string]any) error {
 	}
 	_ = run("chown", "-R", user+":"+user, home)
 	out["method"] = "hugo"
+	out["version"] = ver
 	out["source_dir"] = src
 	out["docroot"] = public
 	return nil
 }
 
-func (s *Server) ensureHugoBinary() (string, error) {
-	if p, err := exec.LookPath("hugo"); err == nil {
-		return p, nil
-	}
+func (s *Server) ensureHugoBinary() (bin string, ver string, err error) {
+	ver = latestGitHubTag("gohugoio/hugo", "0.166.0")
+	ver = strings.TrimPrefix(ver, "v")
 	dir := filepath.Join(s.DataDir, "bin")
 	_ = os.MkdirAll(dir, 0o755)
 	dest := filepath.Join(dir, "hugo")
-	if _, err := os.Stat(dest); err == nil {
-		return dest, nil
+	marker := dest + ".version"
+	if b, e := os.ReadFile(marker); e == nil && strings.TrimSpace(string(b)) == ver {
+		if _, e2 := os.Stat(dest); e2 == nil {
+			return dest, ver, nil
+		}
 	}
-	const ver = "0.139.4"
 	url := fmt.Sprintf("https://github.com/gohugoio/hugo/releases/download/v%s/hugo_%s_linux-amd64.tar.gz", ver, ver)
 	archive := filepath.Join(os.TempDir(), "hugo-"+ver+".tgz")
 	if err := run("curl", "-fsSL", "-L", url, "-o", archive); err != nil {
-		return "", fmt.Errorf("hugo download: %w", err)
+		return "", "", fmt.Errorf("hugo download: %w", err)
 	}
 	extract := filepath.Join(os.TempDir(), "hugo-extract-"+ver)
 	_ = os.RemoveAll(extract)
 	_ = os.MkdirAll(extract, 0o755)
 	if err := run("tar", "-xzf", archive, "-C", extract); err != nil {
-		return "", fmt.Errorf("hugo extract: %w", err)
+		return "", "", fmt.Errorf("hugo extract: %w", err)
 	}
 	if err := run("install", "-m", "755", filepath.Join(extract, "hugo"), dest); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return dest, nil
+	_ = os.WriteFile(marker, []byte(ver+"\n"), 0o644)
+	return dest, ver, nil
 }
 
 func (s *Server) provisionCodeIgniter(p map[string]any, out map[string]any) error {
@@ -539,6 +546,7 @@ func (s *Server) provisionCodeIgniter(p map[string]any, out map[string]any) erro
 		return fmt.Errorf("codeigniter: composer requis")
 	}
 	_ = os.RemoveAll(publicHTML)
+	// Dernière appstarter stable Packagist (sans pin = toujours la plus récente)
 	if err := run("composer", "create-project", "--prefer-dist", "codeigniter4/appstarter", publicHTML); err != nil {
 		return fmt.Errorf("codeigniter composer: %w", err)
 	}
@@ -552,6 +560,23 @@ func (s *Server) provisionCodeIgniter(p map[string]any, out map[string]any) erro
 	out["method"] = "composer"
 	out["docroot"] = pub
 	return nil
+}
+
+// latestGitHubTag lit /releases/latest ; fallback si API KO / rate-limit.
+func latestGitHubTag(repo, fallback string) string {
+	cmd := exec.Command("curl", "-fsSL", "-H", "Accept: application/vnd.github+json",
+		"https://api.github.com/repos/"+repo+"/releases/latest")
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		return fallback
+	}
+	var meta struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.Unmarshal(b, &meta); err != nil || meta.TagName == "" {
+		return fallback
+	}
+	return strings.TrimSpace(meta.TagName)
 }
 
 func patchCIEnv(appRoot, dbName, dbUser, dbPass string) error {
