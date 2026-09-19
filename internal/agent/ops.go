@@ -43,6 +43,8 @@ func (s *Server) createSiteUser(p map[string]any, out map[string]any) error {
 			return err
 		}
 		_ = os.MkdirAll(public, 0o755)
+		// Stub statique : évite un 403 nginx (directory index forbidden) si aucun app one-click.
+		_ = os.WriteFile(filepath.Join(public, "index.html"), []byte("<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Hébernet</title></head><body><h1>Site prêt — Hébernet</h1><p>Déposez vos fichiers dans <code>public_html/</code> via SFTP.</p></body></html>\n"), 0o644)
 		_ = run("chown", "-R", user+":"+user, home)
 	}
 	out["home_path"] = home
@@ -238,8 +240,31 @@ php_admin_value[open_basedir] = %s:/tmp
 	if !s.DryRun {
 		_ = run("systemctl", "reload", "php"+version+"-fpm")
 	}
+	// Stub PHP : OpProvisionPHP ne déployait que le pool → public_html vide → 403 nginx.
+	home := s.siteRoot(user)
+	public := filepath.Join(home, "public_html")
+	_ = os.MkdirAll(public, 0o755)
+	indexPHP := filepath.Join(public, "index.php")
+	if _, err := os.Stat(indexPHP); err != nil {
+		stub := `<?php
+declare(strict_types=1);
+header('Content-Type: text/html; charset=utf-8');
+echo "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Hébernet PHP</title></head><body>";
+echo "<h1>Site PHP — Hébernet</h1>";
+echo "<p>PHP " . PHP_VERSION . " · déposez vos fichiers dans <code>public_html/</code> via SFTP.</p>";
+echo "</body></html>\n";
+`
+		if err := os.WriteFile(indexPHP, []byte(stub), 0o644); err != nil {
+			return err
+		}
+		_ = os.Remove(filepath.Join(public, "index.html")) // préférer index.php
+		if !s.DryRun {
+			_ = run("chown", "-R", user+":"+user, home)
+		}
+	}
 	out["pool"] = dest
 	out["php_version"] = version
+	out["docroot"] = public
 	return nil
 }
 
