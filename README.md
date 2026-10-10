@@ -101,16 +101,14 @@ Détail : [docs/install.md](docs/install.md).
 
 ### Docker / Portainer (perso, T330 / ZimaOS)
 
-Stack légère sans VM — recommandée pour usage solo :
+Stack légère sans VM — recommandée pour usage solo.  
+Guide : [docs/docker-portainer.md](docs/docker-portainer.md) (compose / Portainer, Nuxt, NPM, Netbird, DNS).
 
 ```bash
-cd ../hebernet-compose
+# depuis le dossier hebernet-compose (à côté du code, ou stack Portainer)
 cp .env.example .env
 docker compose up -d --build
 ```
-
-Guide complet (déploiement Nuxt, NPM, Netbird, DNS) :  
-[../hebernet-compose/README.md](docs/docker-portainer.md).
 
 - Panneau : `http://IP_LAN:18787/`
 - SSL public : **VPS** (Nginx Proxy Manager) → Netbird → `IP_T330:18787`
