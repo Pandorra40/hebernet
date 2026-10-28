@@ -1,5 +1,7 @@
 # Hébernet
 
+![Hébernet — panneau d’hébergement self-host](docs/assets/hebernet-banner.png)
+
 <p align="center">
   <strong>Panneau d’hébergement web — usage perso</strong><br>
   Nuxt (Node SSR) · API PHP · MariaDB
